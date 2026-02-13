@@ -2,24 +2,48 @@
 
 namespace Database\Seeders;
 
+use App\Enums\Role;
+use App\Models\Organization;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
      * Seed the application's database.
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // Seed roles and permissions first
+        $this->call(RolesAndPermissionsSeeder::class);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        // Create Super Admin user
+        $superAdminOrg = Organization::factory()->enterprise()->create([
+            'name' => 'OnPageIQ Admin',
         ]);
+
+        $superAdmin = User::factory()->forOrganization($superAdminOrg)->create([
+            'name' => 'Gregory Varghese',
+            'email' => 'admin@onpageiq.com',
+        ]);
+        $superAdmin->assignRole(Role::SuperAdmin->value);
+
+        // Create a test organization with owner
+        $testOrg = Organization::factory()->create([
+            'name' => 'OnPageIQ',
+        ]);
+
+        $testOwner = User::factory()->forOrganization($testOrg)->create([
+            'name' => 'Test Owner',
+            'email' => 'owner@example.com',
+        ]);
+        $testOwner->assignRole(Role::Owner->value);
+
+        // Create a test member
+        $testMember = User::factory()->forOrganization($testOrg)->create([
+            'name' => 'Test Member',
+            'email' => 'member@example.com',
+        ]);
+        $testMember->assignRole(Role::Member->value);
     }
 }

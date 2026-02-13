@@ -18,7 +18,24 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
+
+            // Organization & department relationships
+            $table->foreignId('organization_id')->nullable()->index();
+            $table->foreignId('department_id')->nullable()->index();
+
+            // OAuth fields
+            $table->string('provider')->nullable(); // google, microsoft
+            $table->string('provider_id')->nullable();
+            $table->string('avatar')->nullable();
+
+            // Abuse prevention
+            $table->string('registration_ip', 45)->nullable();
+            $table->string('fingerprint_hash')->nullable();
+
             $table->timestamps();
+
+            // Index for OAuth lookups
+            $table->index(['provider', 'provider_id']);
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

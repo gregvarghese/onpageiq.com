@@ -1,8 +1,24 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+/*
+|--------------------------------------------------------------------------
+| Console Routes
+|--------------------------------------------------------------------------
+|
+| Define your scheduled commands here. Commands are scheduled using
+| a fluent, expressive interface.
+|
+*/
+
+// Clean up old scan history based on retention policies (runs daily at 2 AM)
+Schedule::command('scans:cleanup')->dailyAt('02:00');
+
+// Clean up orphaned screenshots (runs daily at 3 AM)
+Schedule::command('screenshots:cleanup --days=7')->dailyAt('03:00');
+
+// AI Usage Aggregation
+Schedule::command('ai:aggregate-daily')->dailyAt('01:00');
+Schedule::command('ai:aggregate-monthly')->monthlyOn(1, '02:00');
+Schedule::command('ai:reset-budgets')->monthlyOn(1, '00:05');

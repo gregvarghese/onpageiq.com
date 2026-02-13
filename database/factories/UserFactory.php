@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Organization;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -29,6 +30,7 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'organization_id' => Organization::factory(),
         ];
     }
 
@@ -39,6 +41,40 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Create user with an existing organization.
+     */
+    public function forOrganization(Organization $organization): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'organization_id' => $organization->id,
+        ]);
+    }
+
+    /**
+     * Create user authenticated via Google.
+     */
+    public function viaGoogle(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'provider' => 'google',
+            'provider_id' => fake()->uuid(),
+            'avatar' => fake()->imageUrl(100, 100, 'people'),
+        ]);
+    }
+
+    /**
+     * Create user authenticated via Microsoft.
+     */
+    public function viaMicrosoft(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'provider' => 'microsoft',
+            'provider_id' => fake()->uuid(),
+            'avatar' => fake()->imageUrl(100, 100, 'people'),
         ]);
     }
 }
