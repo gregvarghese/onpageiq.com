@@ -92,6 +92,43 @@
             </div>
         </div>
 
+        <!-- Page Preview -->
+        @if($result->screenshots && count($result->screenshots) > 0)
+            <div class="mb-8" x-data="{ expanded: false }">
+                <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
+                    <button
+                        type="button"
+                        class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                        x-on:click="expanded = !expanded"
+                    >
+                        <div class="flex items-center gap-x-2">
+                            <x-ui.icon name="photo" class="size-5 text-gray-400" />
+                            <span class="text-sm font-medium text-gray-900 dark:text-white">Page Preview</span>
+                        </div>
+                        <x-ui.icon
+                            name="chevron-down"
+                            class="size-5 text-gray-400 transition-transform duration-200"
+                            x-bind:class="expanded && 'rotate-180'"
+                        />
+                    </button>
+                    <div x-show="expanded" x-collapse>
+                        <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+                            <div class="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900">
+                                <img
+                                    src="{{ asset('storage/' . str_replace('public/', '', $result->screenshots[0])) }}"
+                                    alt="Page screenshot"
+                                    class="w-full h-auto max-h-[600px] object-contain object-top"
+                                />
+                            </div>
+                            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+                                Full-page screenshot captured at scan time
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <!-- Filters -->
         <div class="mb-6 flex flex-wrap items-center gap-3">
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Filter by:</span>
@@ -203,6 +240,20 @@
                                         <code class="ml-1 rounded bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 text-red-600 dark:text-red-400">{{ $issue->text_excerpt }}</code>
                                     </p>
                                 </div>
+
+                                <!-- Context (where on page) -->
+                                @if($issue->context)
+                                    <div class="mt-2 rounded-md bg-gray-50 dark:bg-gray-900/50 p-2">
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">Found in:</p>
+                                        <p class="text-sm text-gray-700 dark:text-gray-300 font-mono text-xs leading-relaxed">
+                                            {!! preg_replace(
+                                                '/(' . preg_quote($issue->text_excerpt, '/') . ')/i',
+                                                '<mark class="bg-red-200 dark:bg-red-900/50 text-red-800 dark:text-red-300 px-0.5 rounded">$1</mark>',
+                                                e($issue->context)
+                                            ) !!}
+                                        </p>
+                                    </div>
+                                @endif
 
                                 <!-- Suggestion -->
                                 @if($issue->suggestion)

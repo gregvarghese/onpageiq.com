@@ -62,6 +62,13 @@ class ProjectShow extends Component
         $this->dispatch('scan-started', scanId: $scan->id);
     }
 
+    #[On('set-scan-type')]
+    public function setScanType(string $type): void
+    {
+        $this->scanType = $type;
+    }
+
+    #[On('trigger-scan-all')]
     public function scanAllUrls(): void
     {
         $this->authorize('update', $this->project);
@@ -69,6 +76,8 @@ class ProjectShow extends Component
         $urls = $this->project->urls()->where('status', '!=', 'scanning')->get();
 
         foreach ($urls as $url) {
+            $url->markAsScanning();
+
             $scan = Scan::create([
                 'url_id' => $url->id,
                 'triggered_by_user_id' => Auth::id(),

@@ -21,20 +21,22 @@
             <div class="flex items-center gap-x-3">
                 <!-- Scan Type Selector -->
                 <select
-                    wire:model.live="scanType"
+                    x-data
+                    x-on:change="Livewire.dispatch('set-scan-type', { type: $event.target.value })"
                     class="rounded-md border-0 py-2 pl-3 pr-8 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 ring-1 ring-inset ring-gray-300 dark:ring-gray-700 focus:ring-2 focus:ring-primary-600"
                 >
-                    <option value="quick">Quick Scan</option>
-                    <option value="deep">Deep Scan</option>
+                    <option value="quick" {{ $scanType === 'quick' ? 'selected' : '' }}>Quick Scan</option>
+                    <option value="deep" {{ $scanType === 'deep' ? 'selected' : '' }}>Deep Scan</option>
                 </select>
 
                 <button
-                    wire:click="scanAllUrls"
-                    wire:loading.attr="disabled"
-                    wire:target="scanAllUrls"
+                    type="button"
+                    x-data="{ loading: false }"
+                    x-on:click="loading = true; Livewire.dispatch('trigger-scan-all'); setTimeout(() => loading = false, 2000)"
+                    x-bind:disabled="loading"
                     class="inline-flex items-center gap-x-2 rounded-md bg-primary-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    <x-ui.icon name="arrow-path" class="size-5" wire:loading.class="animate-spin" wire:target="scanAllUrls" />
+                    <x-ui.icon name="arrow-path" class="size-5" x-bind:class="loading && 'animate-spin'" />
                     Scan All
                 </button>
             </div>

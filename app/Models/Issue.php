@@ -17,6 +17,7 @@ class Issue extends Model
         'severity',
         'text_excerpt',
         'suggestion',
+        'context',
         'dom_selector',
         'screenshot_path',
         'position',

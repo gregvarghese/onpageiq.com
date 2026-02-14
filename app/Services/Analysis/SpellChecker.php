@@ -287,14 +287,20 @@ class SpellChecker
      * Convert spell check results to issue format.
      *
      * @param  array<array{word: string, suggestions: array<string>, offset: int, line: int}>  $misspellings
-     * @return array<array{category: string, severity: string, text_excerpt: string, suggestion: string, source_tool: string, confidence: int}>
+     * @param  string|null  $originalText  The original text for extracting context
+     * @return array<array{category: string, severity: string, text_excerpt: string, suggestion: string, source_tool: string, confidence: int, context: string|null}>
      */
-    public function toIssues(array $misspellings): array
+    public function toIssues(array $misspellings, ?string $originalText = null): array
     {
-        return array_map(function ($misspelling) {
+        return array_map(function ($misspelling) use ($originalText) {
             $suggestion = ! empty($misspelling['suggestions'])
                 ? implode(' or ', array_slice($misspelling['suggestions'], 0, 2))
                 : 'Check spelling';
+
+            $context = null;
+            if ($originalText !== null) {
+                $context = $this->extractContext($originalText, $misspelling['word'], $misspelling['offset'] ?? 0);
+            }
 
             return [
                 'category' => 'spelling',
@@ -303,8 +309,60 @@ class SpellChecker
                 'suggestion' => $suggestion,
                 'source_tool' => 'hunspell',
                 'confidence' => 95, // Hunspell is deterministic - high confidence
+                'context' => $context,
             ];
         }, $misspellings);
+    }
+
+    /**
+     * Extract surrounding context for a word.
+     */
+    protected function extractContext(string $text, string $word, int $offset): ?string
+    {
+        // Find the word in the original text near the offset
+        $searchStart = max(0, $offset - 100);
+        $searchText = substr($text, $searchStart, 300);
+
+        // Find the word in this region (case-insensitive)
+        $pos = stripos($searchText, $word);
+        if ($pos === false) {
+            // Try searching the full text
+            $pos = stripos($text, $word);
+            if ($pos === false) {
+                return null;
+            }
+            $searchStart = 0;
+            $searchText = $text;
+        }
+
+        // Extract context around the word (approximately 40 chars before and after)
+        $contextStart = max(0, $pos - 40);
+        $contextLength = strlen($word) + 80;
+        $context = substr($searchText, $contextStart, $contextLength);
+
+        // Clean up the context
+        $context = trim($context);
+
+        // Add ellipsis if we're not at the boundaries
+        if ($contextStart > 0) {
+            // Find first word boundary to start cleanly
+            $firstSpace = strpos($context, ' ');
+            if ($firstSpace !== false && $firstSpace < 15) {
+                $context = substr($context, $firstSpace + 1);
+            }
+            $context = '...'.$context;
+        }
+
+        if ($contextStart + $contextLength < strlen($searchText)) {
+            // Find last word boundary to end cleanly
+            $lastSpace = strrpos($context, ' ');
+            if ($lastSpace !== false && $lastSpace > strlen($context) - 15) {
+                $context = substr($context, 0, $lastSpace);
+            }
+            $context = $context.'...';
+        }
+
+        return $context;
     }
 
     /**

@@ -132,7 +132,7 @@ class ContentAnalyzer
 
         // First layer: Hunspell spell checker
         $misspellings = $this->spellChecker->check($content->text, $locale);
-        $issues = $this->spellChecker->toIssues($misspellings);
+        $issues = $this->spellChecker->toIssues($misspellings, $content->text);
 
         // Second layer: LanguageTool (if enabled and available)
         if (config('onpageiq.languagetool.enabled', false) && $this->languageToolChecker->isAvailable()) {
@@ -480,6 +480,7 @@ PROMPT;
                 'severity' => $issueData['severity'] ?? 'warning',
                 'text_excerpt' => $issueData['text_excerpt'] ?? '',
                 'suggestion' => $issueData['suggestion'] ?? null,
+                'context' => $issueData['context'] ?? null,
                 'dom_selector' => $issueData['dom_selector'] ?? null,
                 'screenshot_path' => null,
                 'position' => $issueData['position'] ?? null,

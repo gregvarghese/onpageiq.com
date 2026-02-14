@@ -41,7 +41,7 @@ class LocalBrowserService implements BrowserServiceInterface
      */
     public function screenshot(string $url, ?string $selector = null): string
     {
-        $filename = 'screenshots/'.uniqid('screenshot_').'.png';
+        $filename = 'public/screenshots/'.uniqid('screenshot_').'.png';
         $path = storage_path('app/'.$filename);
 
         $script = $this->getScreenshotScript($url, $path, $selector);
@@ -55,7 +55,7 @@ class LocalBrowserService implements BrowserServiceInterface
      */
     public function fullPageScreenshot(string $url): string
     {
-        $filename = 'screenshots/'.uniqid('fullpage_').'.png';
+        $filename = 'public/screenshots/'.uniqid('fullpage_').'.png';
         $path = storage_path('app/'.$filename);
 
         $script = $this->getFullPageScreenshotScript($url, $path);
@@ -70,7 +70,15 @@ class LocalBrowserService implements BrowserServiceInterface
     public function isReachable(string $url): bool
     {
         try {
-            $response = Http::timeout(10)->head($url);
+            $request = Http::timeout(10);
+
+            // Disable SSL verification for local development domains
+            $host = parse_url($url, PHP_URL_HOST);
+            if ($host && (str_ends_with($host, '.test') || str_ends_with($host, '.local') || $host === 'localhost')) {
+                $request = $request->withoutVerifying();
+            }
+
+            $response = $request->head($url);
 
             if (! $response->successful()) {
                 return false;
@@ -92,6 +100,20 @@ class LocalBrowserService implements BrowserServiceInterface
         $script = $this->getHtmlScript($url);
 
         return $this->runPlaywrightScript($script);
+    }
+
+    /**
+     * Check if HTTPS errors should be ignored for this URL.
+     */
+    protected function shouldIgnoreHttpsErrors(string $url): bool
+    {
+        $host = parse_url($url, PHP_URL_HOST);
+
+        return $host && (
+            str_ends_with($host, '.test') ||
+            str_ends_with($host, '.local') ||
+            $host === 'localhost'
+        );
     }
 
     /**
@@ -127,13 +149,15 @@ class LocalBrowserService implements BrowserServiceInterface
     protected function getExtractScript(string $url): string
     {
         $escapedUrl = addslashes($url);
+        $ignoreHttpsErrors = $this->shouldIgnoreHttpsErrors($url) ? 'true' : 'false';
 
         return <<<JS
 const { chromium } = require('playwright');
 
 (async () => {
     const browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage();
+    const context = await browser.newContext({ ignoreHTTPSErrors: {$ignoreHttpsErrors} });
+    const page = await context.newPage();
 
     try {
         await page.goto('{$escapedUrl}', {
@@ -183,6 +207,7 @@ JS;
     {
         $escapedUrl = addslashes($url);
         $escapedPath = addslashes($path);
+        $ignoreHttpsErrors = $this->shouldIgnoreHttpsErrors($url) ? 'true' : 'false';
         $selectorCode = $selector
             ? "await page.locator('".addslashes($selector)."').screenshot({ path: '{$escapedPath}' });"
             : "await page.screenshot({ path: '{$escapedPath}' });";
@@ -192,7 +217,8 @@ const { chromium } = require('playwright');
 
 (async () => {
     const browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage();
+    const context = await browser.newContext({ ignoreHTTPSErrors: {$ignoreHttpsErrors} });
+    const page = await context.newPage();
 
     try {
         await page.goto('{$escapedUrl}', {
@@ -217,13 +243,15 @@ JS;
     {
         $escapedUrl = addslashes($url);
         $escapedPath = addslashes($path);
+        $ignoreHttpsErrors = $this->shouldIgnoreHttpsErrors($url) ? 'true' : 'false';
 
         return <<<JS
 const { chromium } = require('playwright');
 
 (async () => {
     const browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage();
+    const context = await browser.newContext({ ignoreHTTPSErrors: {$ignoreHttpsErrors} });
+    const page = await context.newPage();
 
     try {
         await page.goto('{$escapedUrl}', {
@@ -248,7 +276,7 @@ JS;
      */
     public function screenshotWithHighlight(string $url, string $selector, ?array $boundingBox = null): string
     {
-        $filename = 'screenshots/'.uniqid('highlight_').'.png';
+        $filename = 'public/screenshots/'.uniqid('highlight_').'.png';
         $path = storage_path('app/'.$filename);
 
         if (! is_dir(dirname($path))) {
@@ -271,6 +299,7 @@ JS;
         $escapedUrl = addslashes($url);
         $escapedPath = addslashes($path);
         $escapedSelector = addslashes($selector);
+        $ignoreHttpsErrors = $this->shouldIgnoreHttpsErrors($url) ? 'true' : 'false';
 
         $highlightStyle = 'outline: 3px solid #ef4444; outline-offset: 2px; background-color: rgba(239, 68, 68, 0.1);';
 
@@ -279,7 +308,8 @@ const { chromium } = require('playwright');
 
 (async () => {
     const browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage();
+    const context = await browser.newContext({ ignoreHTTPSErrors: {$ignoreHttpsErrors} });
+    const page = await context.newPage();
 
     try {
         await page.goto('{$escapedUrl}', {
@@ -347,13 +377,15 @@ JS;
     protected function getHtmlScript(string $url): string
     {
         $escapedUrl = addslashes($url);
+        $ignoreHttpsErrors = $this->shouldIgnoreHttpsErrors($url) ? 'true' : 'false';
 
         return <<<JS
 const { chromium } = require('playwright');
 
 (async () => {
     const browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage();
+    const context = await browser.newContext({ ignoreHTTPSErrors: {$ignoreHttpsErrors} });
+    const page = await context.newPage();
 
     try {
         await page.goto('{$escapedUrl}', {

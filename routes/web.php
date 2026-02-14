@@ -29,6 +29,11 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+// Test page with intentional errors (for development/QA)
+Route::get('/test-errors', function () {
+    return view('test-errors');
+})->name('test-errors');
+
 /*
 |--------------------------------------------------------------------------
 | OAuth Routes
