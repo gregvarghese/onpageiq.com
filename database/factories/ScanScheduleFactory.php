@@ -31,6 +31,9 @@ class ScanScheduleFactory extends Factory
             'is_active' => true,
             'last_run_at' => null,
             'next_run_at' => fake()->dateTimeBetween('now', '+1 week'),
+            'deactivated_at' => null,
+            'deactivation_reason' => null,
+            'metadata' => null,
         ];
     }
 
@@ -89,6 +92,28 @@ class ScanScheduleFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'is_active' => false,
+        ]);
+    }
+
+    /**
+     * Set schedule as deactivated with reason.
+     */
+    public function deactivated(string $reason = 'insufficient_credits'): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_active' => false,
+            'deactivated_at' => now(),
+            'deactivation_reason' => $reason,
+        ]);
+    }
+
+    /**
+     * Set metadata on the schedule.
+     */
+    public function withMetadata(array $metadata): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'metadata' => $metadata,
         ]);
     }
 

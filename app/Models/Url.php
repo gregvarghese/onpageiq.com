@@ -53,6 +53,54 @@ class Url extends Model
     }
 
     /**
+     * Get the screenshots for this URL.
+     */
+    public function screenshots(): HasMany
+    {
+        return $this->hasMany(PageScreenshot::class);
+    }
+
+    /**
+     * Get the broken links found on this URL.
+     */
+    public function brokenLinks(): HasMany
+    {
+        return $this->hasMany(BrokenLink::class);
+    }
+
+    /**
+     * Get the duplicate content records for this URL.
+     */
+    public function duplicateContents(): HasMany
+    {
+        return $this->hasMany(DuplicateContent::class);
+    }
+
+    /**
+     * Get the metrics for this URL.
+     */
+    public function metrics(): HasMany
+    {
+        return $this->hasMany(PageMetrics::class);
+    }
+
+    /**
+     * Get the schema validations for this URL.
+     */
+    public function schemaValidations(): HasMany
+    {
+        return $this->hasMany(SchemaValidation::class);
+    }
+
+    /**
+     * Get the latest metrics for this URL.
+     */
+    public function latestMetrics(): HasOne
+    {
+        return $this->hasOne(PageMetrics::class)->latestOfMany();
+    }
+
+    /**
      * Get all scans for this URL.
      */
     public function scans(): HasMany

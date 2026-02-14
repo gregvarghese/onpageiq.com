@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Project extends Model
 {
@@ -108,6 +109,30 @@ class Project extends Model
     {
         return $this->belongsToMany(IndustryDictionary::class, 'project_industry_dictionary')
             ->withTimestamps();
+    }
+
+    /**
+     * Get the language settings for this project.
+     */
+    public function languageSettings(): HasOne
+    {
+        return $this->hasOne(ProjectLanguageSetting::class);
+    }
+
+    /**
+     * Get the decorative images marked for this project.
+     */
+    public function decorativeImages(): HasMany
+    {
+        return $this->hasMany(DecorativeImage::class);
+    }
+
+    /**
+     * Get the discovered URLs for this project.
+     */
+    public function discoveredUrls(): HasMany
+    {
+        return $this->hasMany(DiscoveredUrl::class);
     }
 
     /**

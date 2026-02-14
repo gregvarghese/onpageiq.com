@@ -6,7 +6,9 @@ use App\Livewire\Billing\BillingHistory;
 use App\Livewire\Billing\CreditPurchase;
 use App\Livewire\Billing\SubscriptionManager;
 use App\Livewire\Dashboard\Dashboard;
+use App\Livewire\Dashboard\OrganizationDashboard;
 use App\Livewire\Notifications\NotificationList;
+use App\Livewire\Pages\PageDetailView;
 use App\Livewire\Profile\ProfileEdit;
 use App\Livewire\Projects\ProjectCreate;
 use App\Livewire\Projects\ProjectDashboard;
@@ -66,12 +68,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard
     Route::get('/dashboard', Dashboard::class)->name('dashboard');
 
+    // Organization Dashboard
+    Route::get('/organization', OrganizationDashboard::class)->name('organization.dashboard');
+
     // Projects
     Route::prefix('projects')->name('projects.')->group(function () {
         Route::get('/', ProjectList::class)->name('index');
         Route::get('/create', ProjectCreate::class)->name('create');
         Route::get('/{project}', ProjectDashboard::class)->name('show');
         Route::get('/{project}/dictionary', ProjectDictionary::class)->name('dictionary');
+        Route::get('/{project}/pages/{url}', PageDetailView::class)->name('pages.show');
+        Route::get('/{project}/issues', ProjectDashboard::class)->name('issues');
+        Route::get('/{project}/schedules', ProjectDashboard::class)->name('schedules');
     });
 
     // Scans
@@ -80,7 +88,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/{scan}', ScanResults::class)->name('show');
         Route::get('/{scan}/compare', ScanComparison::class)->name('compare');
         Route::get('/{scan}/export/pdf', [ExportController::class, 'scanPdf'])->name('export.pdf');
+        Route::get('/{scan}/export/csv', [ExportController::class, 'scanCsv'])->name('export.csv');
         Route::get('/{scan}/compare/{baseline}/export/pdf', [ExportController::class, 'comparisonPdf'])->name('compare.export.pdf');
+    });
+
+    // Project Exports
+    Route::prefix('projects/{project}/export')->name('projects.export.')->group(function () {
+        Route::get('/issues.csv', [ExportController::class, 'projectIssuesCsv'])->name('issues.csv');
+        Route::get('/issues.json', [ExportController::class, 'projectIssuesJson'])->name('issues.json');
+        Route::get('/issues.pdf', [ExportController::class, 'projectIssuesPdf'])->name('issues.pdf');
+        Route::get('/summary.pdf', [ExportController::class, 'projectSummaryPdf'])->name('summary.pdf');
     });
 
     // Reports

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Scan extends Model
@@ -54,6 +55,54 @@ class Scan extends Model
     public function result(): HasOne
     {
         return $this->hasOne(ScanResult::class);
+    }
+
+    /**
+     * Get the discovered URLs from this scan.
+     */
+    public function discoveredUrls(): HasMany
+    {
+        return $this->hasMany(DiscoveredUrl::class);
+    }
+
+    /**
+     * Get the screenshots captured during this scan.
+     */
+    public function screenshots(): HasMany
+    {
+        return $this->hasMany(PageScreenshot::class);
+    }
+
+    /**
+     * Get the broken links found during this scan.
+     */
+    public function brokenLinks(): HasMany
+    {
+        return $this->hasMany(BrokenLink::class);
+    }
+
+    /**
+     * Get the duplicate content detected in this scan.
+     */
+    public function duplicateContents(): HasMany
+    {
+        return $this->hasMany(DuplicateContent::class);
+    }
+
+    /**
+     * Get the page metrics collected during this scan.
+     */
+    public function pageMetrics(): HasMany
+    {
+        return $this->hasMany(PageMetrics::class);
+    }
+
+    /**
+     * Get the schema validations from this scan.
+     */
+    public function schemaValidations(): HasMany
+    {
+        return $this->hasMany(SchemaValidation::class);
     }
 
     /**

@@ -24,6 +24,9 @@ class ScanSchedule extends Model
         'is_active',
         'last_run_at',
         'next_run_at',
+        'deactivated_at',
+        'deactivation_reason',
+        'metadata',
     ];
 
     protected function casts(): array
@@ -33,6 +36,8 @@ class ScanSchedule extends Model
             'is_active' => 'boolean',
             'last_run_at' => 'datetime',
             'next_run_at' => 'datetime',
+            'deactivated_at' => 'datetime',
+            'metadata' => 'array',
         ];
     }
 

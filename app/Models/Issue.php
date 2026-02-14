@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Issue extends Model
@@ -42,11 +43,59 @@ class Issue extends Model
     }
 
     /**
+     * Alias for scanResult relationship.
+     */
+    public function result(): BelongsTo
+    {
+        return $this->scanResult();
+    }
+
+    /**
+     * Get the message for display (alias for text_excerpt).
+     */
+    public function getMessageAttribute(): string
+    {
+        return $this->text_excerpt ?? '';
+    }
+
+    /**
      * Get the assignment for this issue.
      */
     public function assignment(): HasOne
     {
         return $this->hasOne(IssueAssignment::class);
+    }
+
+    /**
+     * Get the notes for this issue.
+     */
+    public function notes(): HasMany
+    {
+        return $this->hasMany(IssueNote::class);
+    }
+
+    /**
+     * Get the state changes for this issue.
+     */
+    public function stateChanges(): HasMany
+    {
+        return $this->hasMany(IssueStateChange::class);
+    }
+
+    /**
+     * Get the false positive reports for this issue.
+     */
+    public function falsePositiveReports(): HasMany
+    {
+        return $this->hasMany(FalsePositiveReport::class);
+    }
+
+    /**
+     * Get the dismissed record for this issue.
+     */
+    public function dismissedIssue(): HasOne
+    {
+        return $this->hasOne(DismissedIssue::class);
     }
 
     /**

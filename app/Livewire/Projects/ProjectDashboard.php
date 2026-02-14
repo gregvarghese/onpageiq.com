@@ -3,6 +3,9 @@
 namespace App\Livewire\Projects;
 
 use App\Jobs\ScanUrlJob;
+use App\Models\DismissedIssue;
+use App\Models\Issue;
+use App\Models\IssueAssignment;
 use App\Models\Project;
 use App\Models\Scan;
 use App\Models\Url;
@@ -21,6 +24,35 @@ class ProjectDashboard extends Component
     public string $newUrl = '';
 
     public string $scanType = 'quick';
+
+    /**
+     * Active overview card filter: null, 'typos', 'issues', 'good'
+     */
+    public ?string $activeCardFilter = null;
+
+    /**
+     * Active findings table category filter.
+     */
+    public string $findingsFilter = 'all';
+
+    /**
+     * Selected issue IDs for bulk actions.
+     *
+     * @var array<int>
+     */
+    public array $selectedIssues = [];
+
+    /**
+     * Page filter for findings table (URL IDs).
+     *
+     * @var array<int>
+     */
+    public array $pageFilter = [];
+
+    /**
+     * Search term for page filter dropdown.
+     */
+    public string $pageSearch = '';
 
     /**
      * Track which sections are collapsed.
@@ -51,6 +83,331 @@ class ProjectDashboard extends Component
         if (isset($this->collapsedSections[$section])) {
             $this->collapsedSections[$section] = ! $this->collapsedSections[$section];
         }
+    }
+
+    /**
+     * Set or toggle the active card filter.
+     */
+    public function setCardFilter(?string $filter): void
+    {
+        $this->activeCardFilter = $this->activeCardFilter === $filter ? null : $filter;
+    }
+
+    /**
+     * Set the findings category filter.
+     */
+    public function setFindingsFilter(string $filter): void
+    {
+        $this->findingsFilter = $filter;
+        $this->selectedIssues = [];
+    }
+
+    /**
+     * Toggle selection of an issue.
+     */
+    public function toggleIssueSelection(int $issueId): void
+    {
+        if (in_array($issueId, $this->selectedIssues)) {
+            $this->selectedIssues = array_values(array_diff($this->selectedIssues, [$issueId]));
+        } else {
+            $this->selectedIssues[] = $issueId;
+        }
+    }
+
+    /**
+     * Select all visible issues.
+     */
+    public function selectAllIssues(): void
+    {
+        $this->selectedIssues = $this->findings->pluck('id')->toArray();
+    }
+
+    /**
+     * Deselect all issues.
+     */
+    public function deselectAllIssues(): void
+    {
+        $this->selectedIssues = [];
+    }
+
+    /**
+     * Toggle page filter.
+     */
+    public function togglePageFilter(int $urlId): void
+    {
+        if (in_array($urlId, $this->pageFilter)) {
+            $this->pageFilter = array_values(array_diff($this->pageFilter, [$urlId]));
+        } else {
+            $this->pageFilter[] = $urlId;
+        }
+    }
+
+    /**
+     * Clear page filter.
+     */
+    public function clearPageFilter(): void
+    {
+        $this->pageFilter = [];
+        $this->pageSearch = '';
+    }
+
+    /**
+     * Bulk mark selected issues as fixed.
+     */
+    public function bulkMarkAsFixed(): void
+    {
+        $this->authorize('update', $this->project);
+
+        if (empty($this->selectedIssues)) {
+            return;
+        }
+
+        $issues = Issue::whereIn('id', $this->selectedIssues)->get();
+
+        foreach ($issues as $issue) {
+            // Create or update assignment to mark as resolved
+            IssueAssignment::updateOrCreate(
+                ['issue_id' => $issue->id],
+                [
+                    'assigned_to_user_id' => Auth::id(),
+                    'assigned_by_user_id' => Auth::id(),
+                    'status' => 'resolved',
+                    'resolved_at' => now(),
+                ]
+            );
+        }
+
+        $count = $issues->count();
+        $this->selectedIssues = [];
+        $this->dispatch('issues-updated');
+        session()->flash('message', "{$count} issue(s) marked as fixed.");
+    }
+
+    /**
+     * Bulk ignore/dismiss selected issues.
+     */
+    public function bulkIgnoreIssues(): void
+    {
+        $this->authorize('update', $this->project);
+
+        if (empty($this->selectedIssues)) {
+            return;
+        }
+
+        $issues = Issue::whereIn('id', $this->selectedIssues)->get();
+
+        foreach ($issues as $issue) {
+            DismissedIssue::firstOrCreate([
+                'issue_id' => $issue->id,
+                'project_id' => $this->project->id,
+            ], [
+                'dismissed_by_user_id' => Auth::id(),
+                'reason' => 'bulk_dismiss',
+                'scope' => 'project',
+            ]);
+        }
+
+        $count = $issues->count();
+        $this->selectedIssues = [];
+        $this->dispatch('issues-updated');
+        session()->flash('message', "{$count} issue(s) dismissed.");
+    }
+
+    /**
+     * Bulk add selected issue words to dictionary.
+     */
+    public function bulkAddToDictionary(): void
+    {
+        $this->authorize('update', $this->project);
+
+        if (empty($this->selectedIssues)) {
+            return;
+        }
+
+        $issues = Issue::whereIn('id', $this->selectedIssues)
+            ->whereIn('category', ['spelling', 'grammar'])
+            ->get();
+
+        $addedWords = [];
+        $dictionary = $this->project->dictionary ?? [];
+
+        foreach ($issues as $issue) {
+            // Extract the word from the issue
+            $word = $this->extractWordFromIssue($issue);
+
+            if ($word && ! in_array(strtolower($word), array_map('strtolower', $dictionary))) {
+                $dictionary[] = $word;
+                $addedWords[] = $word;
+
+                // Also dismiss the issue
+                DismissedIssue::firstOrCreate([
+                    'issue_id' => $issue->id,
+                    'project_id' => $this->project->id,
+                ], [
+                    'dismissed_by_user_id' => Auth::id(),
+                    'reason' => 'added_to_dictionary',
+                    'scope' => 'project',
+                ]);
+            }
+        }
+
+        if (! empty($addedWords)) {
+            $this->project->update(['dictionary' => $dictionary]);
+        }
+
+        $count = count($addedWords);
+        $this->selectedIssues = [];
+        $this->dispatch('issues-updated');
+        $this->dispatch('dictionary-updated');
+        session()->flash('message', "{$count} word(s) added to dictionary.");
+    }
+
+    /**
+     * Extract the misspelled/flagged word from an issue.
+     */
+    protected function extractWordFromIssue(Issue $issue): ?string
+    {
+        // Try to get from metadata first
+        if (isset($issue->metadata['word'])) {
+            return $issue->metadata['word'];
+        }
+
+        // Try to extract from text_excerpt (usually the misspelled word)
+        if ($issue->text_excerpt) {
+            // If it's a single word, use it directly
+            $excerpt = trim($issue->text_excerpt);
+            if (! str_contains($excerpt, ' ') && strlen($excerpt) <= 50) {
+                return $excerpt;
+            }
+        }
+
+        // Try to extract from context or description
+        if (preg_match('/["\']([^"\']+)["\']/', $issue->description ?? '', $matches)) {
+            return $matches[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * Bulk assign selected issues to a user.
+     */
+    public function bulkAssignTo(int $userId): void
+    {
+        $this->authorize('update', $this->project);
+
+        if (empty($this->selectedIssues)) {
+            return;
+        }
+
+        $issues = Issue::whereIn('id', $this->selectedIssues)->get();
+
+        foreach ($issues as $issue) {
+            IssueAssignment::updateOrCreate(
+                ['issue_id' => $issue->id],
+                [
+                    'assigned_to_user_id' => $userId,
+                    'assigned_by_user_id' => Auth::id(),
+                    'status' => 'open',
+                ]
+            );
+        }
+
+        $count = $issues->count();
+        $this->selectedIssues = [];
+        $this->dispatch('issues-updated');
+        session()->flash('message', "{$count} issue(s) assigned.");
+    }
+
+    /**
+     * Mark a single issue as fixed.
+     */
+    public function markIssueAsFixed(int $issueId): void
+    {
+        $this->authorize('update', $this->project);
+
+        $issue = Issue::findOrFail($issueId);
+
+        IssueAssignment::updateOrCreate(
+            ['issue_id' => $issue->id],
+            [
+                'assigned_to_user_id' => Auth::id(),
+                'assigned_by_user_id' => Auth::id(),
+                'status' => 'resolved',
+                'resolved_at' => now(),
+            ]
+        );
+
+        $this->dispatch('issues-updated');
+        session()->flash('message', 'Issue marked as fixed.');
+    }
+
+    /**
+     * Ignore/dismiss a single issue.
+     */
+    public function ignoreIssue(int $issueId): void
+    {
+        $this->authorize('update', $this->project);
+
+        $issue = Issue::findOrFail($issueId);
+
+        DismissedIssue::firstOrCreate([
+            'issue_id' => $issue->id,
+            'project_id' => $this->project->id,
+        ], [
+            'dismissed_by_user_id' => Auth::id(),
+            'reason' => 'user_dismissed',
+            'scope' => 'project',
+        ]);
+
+        $this->dispatch('issues-updated');
+        session()->flash('message', 'Issue dismissed.');
+    }
+
+    /**
+     * Add a single issue's word to dictionary.
+     */
+    public function addIssueToDictionary(int $issueId): void
+    {
+        $this->authorize('update', $this->project);
+
+        $issue = Issue::findOrFail($issueId);
+
+        if (! in_array($issue->category, ['spelling', 'grammar'])) {
+            return;
+        }
+
+        $word = $this->extractWordFromIssue($issue);
+
+        if (! $word) {
+            session()->flash('error', 'Could not extract word from issue.');
+
+            return;
+        }
+
+        $dictionary = $this->project->dictionary ?? [];
+
+        if (! in_array(strtolower($word), array_map('strtolower', $dictionary))) {
+            $dictionary[] = $word;
+            $this->project->update(['dictionary' => $dictionary]);
+
+            // Also dismiss the issue
+            DismissedIssue::firstOrCreate([
+                'issue_id' => $issue->id,
+                'project_id' => $this->project->id,
+            ], [
+                'dismissed_by_user_id' => Auth::id(),
+                'reason' => 'added_to_dictionary',
+                'scope' => 'project',
+            ]);
+
+            $this->dispatch('dictionary-updated');
+            session()->flash('message', "'{$word}' added to dictionary.");
+        } else {
+            session()->flash('message', "'{$word}' is already in the dictionary.");
+        }
+
+        $this->dispatch('issues-updated');
     }
 
     /**
@@ -206,6 +563,20 @@ class ProjectDashboard extends Component
             ? max(0, 100 - (($errorCount * 5 + $warningCount * 2) / max(1, $totalUrls)))
             : 100;
 
+        // Count pages with issues vs clean pages
+        $pagesWithIssues = 0;
+        $pagesLookGood = 0;
+
+        foreach ($urls as $url) {
+            if ($url->latestScan?->result) {
+                if ($url->latestScan->result->issues->count() > 0) {
+                    $pagesWithIssues++;
+                } else {
+                    $pagesLookGood++;
+                }
+            }
+        }
+
         return [
             'score' => round($score),
             'totalUrls' => $totalUrls,
@@ -216,6 +587,8 @@ class ProjectDashboard extends Component
             'warningCount' => $warningCount,
             'lastScanAt' => $lastScanAt,
             'totalScans' => Scan::whereIn('url_id', $urls->pluck('id'))->count(),
+            'pagesWithIssues' => $pagesWithIssues,
+            'pagesLookGood' => $pagesLookGood,
         ];
     }
 
@@ -232,6 +605,85 @@ class ProjectDashboard extends Component
             ->with('url')
             ->latest()
             ->get();
+    }
+
+    /**
+     * Get filtered findings/issues for the findings table.
+     */
+    #[Computed]
+    public function findings(): \Illuminate\Support\Collection
+    {
+        $urlIds = $this->project->urls()->pluck('id');
+
+        // If page filter is active, limit to those URLs
+        if (! empty($this->pageFilter)) {
+            $urlIds = collect($this->pageFilter);
+        }
+
+        $issues = \App\Models\Issue::query()
+            ->whereHas('result.scan', function ($query) use ($urlIds) {
+                $query->whereIn('url_id', $urlIds);
+            })
+            ->with(['result.scan.url'])
+            ->latest()
+            ->get();
+
+        // Filter by category if not 'all'
+        if ($this->findingsFilter !== 'all') {
+            $categoryMap = [
+                'content' => ['spelling', 'grammar', 'readability'],
+                'accessibility' => ['accessibility'],
+                'meta' => ['seo', 'meta'],
+                'links' => ['links', 'broken-link'],
+                'seo' => ['seo'],
+            ];
+
+            $categories = $categoryMap[$this->findingsFilter] ?? [$this->findingsFilter];
+            $issues = $issues->filter(fn ($issue) => in_array($issue->category, $categories));
+        }
+
+        return $issues;
+    }
+
+    /**
+     * Get findings count by category for filter chips.
+     *
+     * @return array<string, int>
+     */
+    #[Computed]
+    public function findingsCounts(): array
+    {
+        $urlIds = $this->project->urls()->pluck('id');
+
+        $issues = \App\Models\Issue::query()
+            ->whereHas('result.scan', function ($query) use ($urlIds) {
+                $query->whereIn('url_id', $urlIds);
+            })
+            ->get();
+
+        return [
+            'all' => $issues->count(),
+            'content' => $issues->whereIn('category', ['spelling', 'grammar', 'readability'])->count(),
+            'accessibility' => $issues->where('category', 'accessibility')->count(),
+            'meta' => $issues->whereIn('category', ['seo', 'meta'])->count(),
+            'links' => $issues->whereIn('category', ['links', 'broken-link'])->count(),
+            'seo' => $issues->where('category', 'seo')->count(),
+        ];
+    }
+
+    /**
+     * Get URLs for the page filter dropdown.
+     */
+    #[Computed]
+    public function filterableUrls(): \Illuminate\Database\Eloquent\Collection
+    {
+        $query = $this->project->urls();
+
+        if ($this->pageSearch) {
+            $query->where('url', 'like', '%'.$this->pageSearch.'%');
+        }
+
+        return $query->orderBy('url')->get();
     }
 
     public function render(): View
