@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\ProcessScheduledScansJob;
 use Illuminate\Support\Facades\Schedule;
 
 /*
@@ -11,6 +12,9 @@ use Illuminate\Support\Facades\Schedule;
 | a fluent, expressive interface.
 |
 */
+
+// Process scheduled scans (runs every minute)
+Schedule::job(new ProcessScheduledScansJob)->everyMinute();
 
 // Clean up old scan history based on retention policies (runs daily at 2 AM)
 Schedule::command('scans:cleanup')->dailyAt('02:00');

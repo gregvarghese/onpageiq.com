@@ -7,14 +7,20 @@ use App\Livewire\Billing\CreditPurchase;
 use App\Livewire\Billing\SubscriptionManager;
 use App\Livewire\Dashboard\Dashboard;
 use App\Livewire\Notifications\NotificationList;
+use App\Livewire\Profile\ProfileEdit;
 use App\Livewire\Projects\ProjectCreate;
+use App\Livewire\Projects\ProjectDashboard;
 use App\Livewire\Projects\ProjectDictionary;
 use App\Livewire\Projects\ProjectList;
-use App\Livewire\Projects\ProjectShow;
+use App\Livewire\Reports\ReportIndex;
 use App\Livewire\Scans\ScanComparison;
+use App\Livewire\Scans\ScanCreate;
 use App\Livewire\Scans\ScanResults;
 use App\Livewire\Settings\ApiTokens;
 use App\Livewire\Settings\OrganizationDictionary;
+use App\Livewire\Settings\SettingsIndex;
+use App\Livewire\Team\TeamDepartments;
+use App\Livewire\Team\TeamMembers;
 use App\Livewire\Webhooks\WebhookDeliveries;
 use App\Livewire\Webhooks\WebhookEndpoints;
 use Illuminate\Support\Facades\Route;
@@ -64,15 +70,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('projects')->name('projects.')->group(function () {
         Route::get('/', ProjectList::class)->name('index');
         Route::get('/create', ProjectCreate::class)->name('create');
-        Route::get('/{project}', ProjectShow::class)->name('show');
+        Route::get('/{project}', ProjectDashboard::class)->name('show');
         Route::get('/{project}/dictionary', ProjectDictionary::class)->name('dictionary');
     });
 
     // Scans
     Route::prefix('scans')->name('scans.')->group(function () {
-        Route::get('/new', function () {
-            return view('dashboard'); // Placeholder
-        })->name('create');
+        Route::get('/new', ScanCreate::class)->name('create');
         Route::get('/{scan}', ScanResults::class)->name('show');
         Route::get('/{scan}/compare', ScanComparison::class)->name('compare');
         Route::get('/{scan}/export/pdf', [ExportController::class, 'scanPdf'])->name('export.pdf');
@@ -81,20 +85,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Reports
     Route::prefix('reports')->name('reports.')->group(function () {
-        Route::get('/', function () {
-            return view('dashboard'); // Placeholder
-        })->name('index');
+        Route::get('/', ReportIndex::class)->name('index');
     });
 
     // Team
     Route::prefix('team')->name('team.')->group(function () {
-        Route::get('/members', function () {
-            return view('dashboard'); // Placeholder
-        })->name('members');
-
-        Route::get('/departments', function () {
-            return view('dashboard'); // Placeholder
-        })->name('departments');
+        Route::get('/members', TeamMembers::class)->name('members');
+        Route::get('/departments', TeamDepartments::class)->name('departments');
     });
 
     // API & Webhooks
@@ -107,17 +104,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Settings
     Route::prefix('settings')->name('settings.')->group(function () {
-        Route::get('/', function () {
-            return view('dashboard'); // Placeholder
-        })->name('index');
+        Route::get('/', SettingsIndex::class)->name('index');
         Route::get('/dictionary', OrganizationDictionary::class)->name('dictionary');
     });
 
     // Profile
     Route::prefix('profile')->name('profile.')->group(function () {
-        Route::get('/', function () {
-            return view('dashboard'); // Placeholder
-        })->name('edit');
+        Route::get('/', ProfileEdit::class)->name('edit');
     });
 
     // Billing

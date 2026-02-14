@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Issue extends Model
 {
@@ -38,6 +39,38 @@ class Issue extends Model
     public function scanResult(): BelongsTo
     {
         return $this->belongsTo(ScanResult::class);
+    }
+
+    /**
+     * Get the assignment for this issue.
+     */
+    public function assignment(): HasOne
+    {
+        return $this->hasOne(IssueAssignment::class);
+    }
+
+    /**
+     * Check if this issue is assigned to someone.
+     */
+    public function isAssigned(): bool
+    {
+        return $this->assignment()->exists();
+    }
+
+    /**
+     * Check if this issue is dismissed.
+     */
+    public function isDismissed(): bool
+    {
+        return $this->assignment?->status === 'dismissed';
+    }
+
+    /**
+     * Check if this issue is resolved.
+     */
+    public function isResolved(): bool
+    {
+        return $this->assignment?->status === 'resolved';
     }
 
     /**

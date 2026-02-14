@@ -54,6 +54,46 @@ class Project extends Model
     }
 
     /**
+     * Get the URL groups in this project.
+     */
+    public function urlGroups(): HasMany
+    {
+        return $this->hasMany(UrlGroup::class)->orderBy('sort_order');
+    }
+
+    /**
+     * Get the scan schedules for this project.
+     */
+    public function scanSchedules(): HasMany
+    {
+        return $this->hasMany(ScanSchedule::class);
+    }
+
+    /**
+     * Get the active scan schedules for this project.
+     */
+    public function activeScanSchedules(): HasMany
+    {
+        return $this->scanSchedules()->where('is_active', true);
+    }
+
+    /**
+     * Get the dismissed issues for this project.
+     */
+    public function dismissedIssues(): HasMany
+    {
+        return $this->hasMany(DismissedIssue::class);
+    }
+
+    /**
+     * Get the webhook integrations for this project.
+     */
+    public function webhookIntegrations(): HasMany
+    {
+        return $this->hasMany(WebhookIntegration::class);
+    }
+
+    /**
      * Get the dictionary words specific to this project.
      */
     public function dictionaryWords(): HasMany

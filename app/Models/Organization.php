@@ -96,6 +96,38 @@ class Organization extends Model
     }
 
     /**
+     * Get the scan templates for this organization.
+     */
+    public function scanTemplates(): HasMany
+    {
+        return $this->hasMany(ScanTemplate::class);
+    }
+
+    /**
+     * Get the default scan template for this organization.
+     */
+    public function defaultScanTemplate(): ?ScanTemplate
+    {
+        return $this->scanTemplates()->where('is_default', true)->first();
+    }
+
+    /**
+     * Get the webhook integrations for this organization.
+     */
+    public function webhookIntegrations(): HasMany
+    {
+        return $this->hasMany(WebhookIntegration::class);
+    }
+
+    /**
+     * Get the dismissed issues for this organization.
+     */
+    public function dismissedIssues(): HasMany
+    {
+        return $this->hasMany(DismissedIssue::class);
+    }
+
+    /**
      * Get organization-level dictionary words (not project-specific).
      */
     public function organizationDictionaryWords(): HasMany
@@ -300,6 +332,118 @@ class Organization extends Model
     }
 
     /**
+     * Get the URL groups limit based on subscription tier.
+     */
+    public function getUrlGroupsLimit(): ?int
+    {
+        return match ($this->subscription_tier) {
+            'free' => 0,
+            'pro' => 5,
+            'team' => 20,
+            'enterprise' => null, // Unlimited
+            default => 0,
+        };
+    }
+
+    /**
+     * Check if the organization can create URL groups.
+     */
+    public function canCreateUrlGroups(): bool
+    {
+        return in_array($this->subscription_tier, ['pro', 'team', 'enterprise']);
+    }
+
+    /**
+     * Get the scheduled scans limit based on subscription tier.
+     */
+    public function getScheduledScansLimit(): ?int
+    {
+        return match ($this->subscription_tier) {
+            'free' => 0,
+            'pro' => 1,
+            'team' => 5,
+            'enterprise' => null, // Unlimited
+            default => 0,
+        };
+    }
+
+    /**
+     * Check if the organization can create scheduled scans.
+     */
+    public function canCreateScheduledScans(): bool
+    {
+        return in_array($this->subscription_tier, ['pro', 'team', 'enterprise']);
+    }
+
+    /**
+     * Get the scan templates limit based on subscription tier.
+     */
+    public function getScanTemplatesLimit(): ?int
+    {
+        return match ($this->subscription_tier) {
+            'free' => 0,
+            'pro' => 3,
+            'team' => 10,
+            'enterprise' => null, // Unlimited
+            default => 0,
+        };
+    }
+
+    /**
+     * Check if the organization can create scan templates.
+     */
+    public function canCreateScanTemplates(): bool
+    {
+        return in_array($this->subscription_tier, ['pro', 'team', 'enterprise']);
+    }
+
+    /**
+     * Get the webhook integrations limit based on subscription tier.
+     */
+    public function getWebhookIntegrationsLimit(): ?int
+    {
+        return match ($this->subscription_tier) {
+            'free' => 0,
+            'pro' => 1,
+            'team' => 5,
+            'enterprise' => null, // Unlimited
+            default => 0,
+        };
+    }
+
+    /**
+     * Check if the organization can create webhook integrations.
+     */
+    public function canCreateWebhookIntegrations(): bool
+    {
+        return in_array($this->subscription_tier, ['pro', 'team', 'enterprise']);
+    }
+
+    /**
+     * Check if the organization can use issue assignments.
+     */
+    public function canUseIssueAssignments(): bool
+    {
+        return in_array($this->subscription_tier, ['team', 'enterprise']);
+    }
+
+    /**
+     * Check if the organization can use white-label PDF reports.
+     */
+    public function canUseWhiteLabelPdf(): bool
+    {
+        return $this->subscription_tier === 'enterprise';
+    }
+
+    /**
+     * Check if the organization can use cross-URL comparison.
+     */
+    public function canUseCrossUrlComparison(): bool
+    {
+        return in_array($this->subscription_tier, ['pro', 'team', 'enterprise']);
+    }
+
+    /**
      * Get the remaining organization dictionary word slots.
      */
     public function getRemainingOrganizationDictionarySlots(): ?int
@@ -311,5 +455,30 @@ class Organization extends Model
         }
 
         return max(0, $limit - $this->organizationDictionaryWords()->count());
+    }
+
+    /**
+     * Get the total dictionary words limit (org + project) based on subscription tier.
+     */
+    public function getDictionaryWordsLimit(): ?int
+    {
+        $orgLimit = $this->getOrganizationDictionaryWordLimit();
+        $projectLimit = $this->getProjectDictionaryWordLimit();
+
+        // If both are null, unlimited
+        if ($orgLimit === null && $projectLimit === null) {
+            return null;
+        }
+
+        // If only one is set, return it
+        if ($orgLimit === null) {
+            return $projectLimit;
+        }
+        if ($projectLimit === null) {
+            return $orgLimit;
+        }
+
+        // Return the sum for combined limit
+        return $orgLimit + $projectLimit;
     }
 }

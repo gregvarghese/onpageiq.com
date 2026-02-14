@@ -15,6 +15,7 @@ class Url extends Model
 
     protected $fillable = [
         'project_id',
+        'url_group_id',
         'url',
         'status',
         'last_scanned_at',
@@ -33,6 +34,22 @@ class Url extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * Get the URL group this URL belongs to.
+     */
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(UrlGroup::class, 'url_group_id');
+    }
+
+    /**
+     * Get the dismissed issues for this URL.
+     */
+    public function dismissedIssues(): HasMany
+    {
+        return $this->hasMany(DismissedIssue::class);
     }
 
     /**
