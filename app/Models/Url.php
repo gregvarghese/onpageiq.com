@@ -66,7 +66,15 @@ class Url extends Model
      */
     public function isScanning(): bool
     {
-        return in_array($this->status, ['pending', 'scanning']);
+        return $this->status === 'scanning';
+    }
+
+    /**
+     * Check if the URL has never been scanned.
+     */
+    public function isNew(): bool
+    {
+        return $this->status === 'pending' && $this->last_scanned_at === null;
     }
 
     /**

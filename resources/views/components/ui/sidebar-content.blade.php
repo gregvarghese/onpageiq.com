@@ -67,6 +67,24 @@
             </ul>
         </li>
 
+        <!-- Admin section (Super Admin only) -->
+        @if(auth()->user()?->hasRole('Super Admin'))
+            <li>
+                <div class="text-xs font-semibold leading-6 text-gray-400 dark:text-gray-500">Admin</div>
+                <ul role="list" class="-mx-2 mt-2 space-y-1">
+                    <x-ui.nav-item href="/admin" :active="request()->is('admin*')">
+                        <x-ui.icon name="shield-check" class="size-6 shrink-0" />
+                        Admin Panel
+                    </x-ui.nav-item>
+
+                    <x-ui.nav-item href="/horizon" :active="request()->is('horizon*')">
+                        <x-ui.icon name="queue-list" class="size-6 shrink-0" />
+                        Horizon
+                    </x-ui.nav-item>
+                </ul>
+            </li>
+        @endif
+
         <!-- Settings at bottom -->
         <li class="mt-auto">
             <x-ui.nav-item href="{{ route('settings.index') }}" :active="request()->routeIs('settings.*')">

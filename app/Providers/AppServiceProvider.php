@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Enums\Role;
 use App\Models\User;
 use App\Services\Analysis\ContentAnalyzer;
+use App\Services\Browser\BrowserServiceInterface;
 use App\Services\Browser\BrowserServiceManager;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -18,6 +19,11 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(BrowserServiceManager::class);
         $this->app->singleton(ContentAnalyzer::class);
+
+        // Bind the interface to the configured driver from the manager
+        $this->app->bind(BrowserServiceInterface::class, function ($app) {
+            return $app->make(BrowserServiceManager::class)->driver();
+        });
     }
 
     /**

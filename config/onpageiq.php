@@ -45,6 +45,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | LanguageTool Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configure the LanguageTool server for additional grammar/spell checking.
+    | Run via Docker: docker compose up -d languagetool
+    |
+    */
+
+    'languagetool' => [
+        'enabled' => env('LANGUAGETOOL_ENABLED', false),
+        'url' => env('LANGUAGETOOL_URL', 'http://localhost:8082'),
+        'timeout' => env('LANGUAGETOOL_TIMEOUT', 30),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Scanning Configuration
     |--------------------------------------------------------------------------
     |

@@ -88,6 +88,22 @@ class Organization extends Model
     }
 
     /**
+     * Get all dictionary words for this organization.
+     */
+    public function dictionaryWords(): HasMany
+    {
+        return $this->hasMany(DictionaryWord::class);
+    }
+
+    /**
+     * Get organization-level dictionary words (not project-specific).
+     */
+    public function organizationDictionaryWords(): HasMany
+    {
+        return $this->dictionaryWords()->whereNull('project_id');
+    }
+
+    /**
      * Check if the organization has team features (Team or Enterprise tier).
      */
     public function hasTeamFeatures(): bool
@@ -172,5 +188,128 @@ class Organization extends Model
             'free' => ['spelling'],
             default => ['spelling', 'grammar', 'seo', 'readability'],
         };
+    }
+
+    /**
+     * Get the available checks for this organization based on tier.
+     *
+     * @return array<string, bool>
+     */
+    public function getAvailableChecks(): array
+    {
+        $allChecks = ['spelling', 'grammar', 'seo', 'readability'];
+        $enabledChecks = $this->getDefaultChecks();
+
+        $available = [];
+        foreach ($allChecks as $check) {
+            $available[$check] = in_array($check, $enabledChecks);
+        }
+
+        return $available;
+    }
+
+    /**
+     * Get the organization-level dictionary word limit based on subscription tier.
+     */
+    public function getOrganizationDictionaryWordLimit(): ?int
+    {
+        return match ($this->subscription_tier) {
+            'free', 'pro' => null, // No org dictionary for free/pro
+            'team' => 1000,
+            'enterprise' => null, // Unlimited
+            default => null,
+        };
+    }
+
+    /**
+     * Get the project-level dictionary word limit based on subscription tier.
+     */
+    public function getProjectDictionaryWordLimit(): ?int
+    {
+        return match ($this->subscription_tier) {
+            'free' => null, // No project dictionary for free
+            'pro' => 100,
+            'team' => 500,
+            'enterprise' => null, // Unlimited
+            default => null,
+        };
+    }
+
+    /**
+     * Get the industry dictionary limit based on subscription tier.
+     */
+    public function getIndustryDictionaryLimit(): ?int
+    {
+        return match ($this->subscription_tier) {
+            'free' => null, // No industry dictionaries for free
+            'pro' => 1,
+            'team' => 3,
+            'enterprise' => null, // Unlimited (all)
+            default => null,
+        };
+    }
+
+    /**
+     * Check if the organization can use organization-level dictionaries.
+     */
+    public function canUseOrganizationDictionary(): bool
+    {
+        return in_array($this->subscription_tier, ['team', 'enterprise']);
+    }
+
+    /**
+     * Check if the organization can use project-level dictionaries.
+     */
+    public function canUseProjectDictionary(): bool
+    {
+        return in_array($this->subscription_tier, ['pro', 'team', 'enterprise']);
+    }
+
+    /**
+     * Check if the organization can use industry dictionaries.
+     */
+    public function canUseIndustryDictionaries(): bool
+    {
+        return in_array($this->subscription_tier, ['pro', 'team', 'enterprise']);
+    }
+
+    /**
+     * Check if the organization can add more words to the organization dictionary.
+     */
+    public function canAddOrganizationDictionaryWord(): bool
+    {
+        if (! $this->canUseOrganizationDictionary()) {
+            return false;
+        }
+
+        $limit = $this->getOrganizationDictionaryWordLimit();
+
+        if ($limit === null) {
+            return true; // Unlimited
+        }
+
+        return $this->organizationDictionaryWords()->count() < $limit;
+    }
+
+    /**
+     * Check if the organization can do bulk import.
+     */
+    public function canBulkImportDictionary(): bool
+    {
+        return in_array($this->subscription_tier, ['team', 'enterprise']);
+    }
+
+    /**
+     * Get the remaining organization dictionary word slots.
+     */
+    public function getRemainingOrganizationDictionarySlots(): ?int
+    {
+        $limit = $this->getOrganizationDictionaryWordLimit();
+
+        if ($limit === null) {
+            return null; // Unlimited
+        }
+
+        return max(0, $limit - $this->organizationDictionaryWords()->count());
     }
 }

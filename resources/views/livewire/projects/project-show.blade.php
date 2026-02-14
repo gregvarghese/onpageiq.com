@@ -21,7 +21,7 @@
             <div class="flex items-center gap-x-3">
                 <!-- Scan Type Selector -->
                 <select
-                    wire:model="scanType"
+                    wire:model.live="scanType"
                     class="rounded-md border-0 py-2 pl-3 pr-8 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 ring-1 ring-inset ring-gray-300 dark:ring-gray-700 focus:ring-2 focus:ring-primary-600"
                 >
                     <option value="quick">Quick Scan</option>
@@ -51,7 +51,7 @@
                     id="newUrl"
                     wire:model="newUrl"
                     placeholder="https://example.com/page"
-                    class="block w-full rounded-md border-0 py-2.5 text-gray-900 dark:text-white bg-white dark:bg-gray-800 ring-1 ring-inset ring-gray-300 dark:ring-gray-700 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
+                    class="block w-full rounded-md border-0 px-3 py-2.5 text-gray-900 dark:text-white bg-white dark:bg-gray-800 ring-1 ring-inset ring-gray-300 dark:ring-gray-700 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
                 />
                 @error('newUrl')
                     <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>

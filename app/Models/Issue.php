@@ -20,6 +20,8 @@ class Issue extends Model
         'dom_selector',
         'screenshot_path',
         'position',
+        'source_tool',
+        'confidence',
     ];
 
     protected function casts(): array
@@ -117,6 +119,48 @@ class Issue extends Model
             'seo' => 'search',
             'readability' => 'book-open',
             default => 'exclamation',
+        };
+    }
+
+    /**
+     * Get human-readable source tool name.
+     */
+    public function getSourceToolName(): string
+    {
+        return match ($this->source_tool) {
+            'hunspell' => 'Hunspell',
+            'languagetool' => 'LanguageTool',
+            'gpt-4o' => 'GPT-4o',
+            'gpt-4o-mini' => 'GPT-4o Mini',
+            default => ucfirst($this->source_tool ?? 'AI'),
+        };
+    }
+
+    /**
+     * Get confidence color for UI display.
+     */
+    public function getConfidenceColor(): string
+    {
+        $confidence = $this->confidence ?? 80;
+
+        return match (true) {
+            $confidence >= 90 => 'green',
+            $confidence >= 75 => 'yellow',
+            default => 'orange',
+        };
+    }
+
+    /**
+     * Get confidence label for UI display.
+     */
+    public function getConfidenceLabel(): string
+    {
+        $confidence = $this->confidence ?? 80;
+
+        return match (true) {
+            $confidence >= 90 => 'High',
+            $confidence >= 75 => 'Medium',
+            default => 'Low',
         };
     }
 }

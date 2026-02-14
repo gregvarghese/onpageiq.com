@@ -47,6 +47,9 @@ class ProjectShow extends Component
         $url = Url::findOrFail($urlId);
         $this->authorize('update', $url->project);
 
+        // Mark URL as scanning
+        $url->markAsScanning();
+
         $scan = Scan::create([
             'url_id' => $url->id,
             'triggered_by_user_id' => Auth::id(),

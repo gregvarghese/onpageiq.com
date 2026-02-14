@@ -7,11 +7,14 @@ use App\Livewire\Billing\CreditPurchase;
 use App\Livewire\Billing\SubscriptionManager;
 use App\Livewire\Dashboard\Dashboard;
 use App\Livewire\Notifications\NotificationList;
+use App\Livewire\Projects\ProjectCreate;
+use App\Livewire\Projects\ProjectDictionary;
 use App\Livewire\Projects\ProjectList;
 use App\Livewire\Projects\ProjectShow;
 use App\Livewire\Scans\ScanComparison;
 use App\Livewire\Scans\ScanResults;
 use App\Livewire\Settings\ApiTokens;
+use App\Livewire\Settings\OrganizationDictionary;
 use App\Livewire\Webhooks\WebhookDeliveries;
 use App\Livewire\Webhooks\WebhookEndpoints;
 use Illuminate\Support\Facades\Route;
@@ -55,10 +58,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Projects
     Route::prefix('projects')->name('projects.')->group(function () {
         Route::get('/', ProjectList::class)->name('index');
-        Route::get('/create', function () {
-            return view('dashboard'); // Placeholder - will be CreateProject Livewire component
-        })->name('create');
+        Route::get('/create', ProjectCreate::class)->name('create');
         Route::get('/{project}', ProjectShow::class)->name('show');
+        Route::get('/{project}/dictionary', ProjectDictionary::class)->name('dictionary');
     });
 
     // Scans
@@ -103,6 +105,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', function () {
             return view('dashboard'); // Placeholder
         })->name('index');
+        Route::get('/dictionary', OrganizationDictionary::class)->name('dictionary');
     });
 
     // Profile

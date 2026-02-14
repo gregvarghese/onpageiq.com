@@ -28,7 +28,24 @@ class ScanUrlJob implements ShouldQueue
 
     public function __construct(
         protected Scan $scan
-    ) {}
+    ) {
+        // Set queue based on organization subscription tier
+        $this->onQueue($this->determineQueue());
+    }
+
+    /**
+     * Determine the queue based on organization subscription tier.
+     */
+    protected function determineQueue(): string
+    {
+        $organization = $this->scan->url->project->organization;
+
+        return match ($organization->subscription_tier) {
+            'enterprise' => 'high',
+            'team', 'pro' => 'default',
+            default => 'low',
+        };
+    }
 
     /**
      * Get the middleware the job should pass through.
@@ -40,20 +57,6 @@ class ScanUrlJob implements ShouldQueue
         return [
             new WithoutOverlapping($this->scan->url_id),
         ];
-    }
-
-    /**
-     * Determine the queue based on organization subscription tier.
-     */
-    public function queue(): string
-    {
-        $organization = $this->scan->url->project->organization;
-
-        return match ($organization->subscription_tier) {
-            'enterprise' => 'high',
-            'team', 'pro' => 'default',
-            default => 'low',
-        };
     }
 
     public function handle(
@@ -107,7 +110,8 @@ class ScanUrlJob implements ShouldQueue
                 content: $pageContent,
                 checks: $checks,
                 deepAnalysis: $this->scan->isDeepScan(),
-                language: $project->language
+                language: $project->language,
+                project: $project
             );
 
             $this->broadcastProgress('Storing results...', 85);

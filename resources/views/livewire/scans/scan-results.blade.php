@@ -222,6 +222,24 @@
                                         </p>
                                     </div>
                                 @endif
+
+                                <!-- Source & Confidence (Super Admin only) -->
+                                @if(auth()->user()?->hasRole('Super Admin'))
+                                    <div class="mt-3 flex items-center gap-x-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+                                        <span class="inline-flex items-center gap-x-1 text-xs text-gray-500 dark:text-gray-400">
+                                            <x-ui.icon name="cpu-chip" class="size-3.5" />
+                                            {{ $issue->getSourceToolName() }}
+                                        </span>
+                                        <span @class([
+                                            'inline-flex items-center gap-x-1 rounded-full px-2 py-0.5 text-xs font-medium',
+                                            'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' => ($issue->confidence ?? 80) >= 90,
+                                            'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' => ($issue->confidence ?? 80) >= 75 && ($issue->confidence ?? 80) < 90,
+                                            'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' => ($issue->confidence ?? 80) < 75,
+                                        ])>
+                                            {{ $issue->confidence ?? 80 }}% confidence
+                                        </span>
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     </div>

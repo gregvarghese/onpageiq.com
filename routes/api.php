@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('v1')->group(function () {
+Route::prefix('v1')->name('api.')->group(function () {
     // Public routes
     Route::post('/auth/token', [\App\Http\Controllers\Api\V1\AuthController::class, 'createToken']);
 

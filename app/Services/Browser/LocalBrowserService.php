@@ -99,7 +99,7 @@ class LocalBrowserService implements BrowserServiceInterface
      */
     protected function runPlaywrightScript(string $script): string
     {
-        $scriptPath = storage_path('app/temp/'.uniqid('playwright_').'.js');
+        $scriptPath = storage_path('app/temp/'.uniqid('playwright_').'.cjs');
 
         if (! is_dir(dirname($scriptPath))) {
             mkdir(dirname($scriptPath), 0755, true);
