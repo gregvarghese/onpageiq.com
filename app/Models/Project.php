@@ -21,12 +21,14 @@ class Project extends Model
         'description',
         'language',
         'check_config',
+        'settings',
     ];
 
     protected function casts(): array
     {
         return [
             'check_config' => 'array',
+            'settings' => 'array',
         ];
     }
 
@@ -133,6 +135,22 @@ class Project extends Model
     public function discoveredUrls(): HasMany
     {
         return $this->hasMany(DiscoveredUrl::class);
+    }
+
+    /**
+     * Get the accessibility audits for this project.
+     */
+    public function accessibilityAudits(): HasMany
+    {
+        return $this->hasMany(AccessibilityAudit::class);
+    }
+
+    /**
+     * Get the latest accessibility audit for this project.
+     */
+    public function latestAccessibilityAudit(): HasOne
+    {
+        return $this->hasOne(AccessibilityAudit::class)->latestOfMany();
     }
 
     /**

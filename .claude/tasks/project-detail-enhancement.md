@@ -592,11 +592,11 @@ Project can set **target reading level** (e.g., "8th grade or below")
 
 ## 18. Open Questions for Future
 
-1. Full accessibility audit scope and implementation (beyond basic WCAG)
+1. ~~Full accessibility audit scope and implementation (beyond basic WCAG)~~ ✅ **COMPLETED** - See `.claude/tasks/accessibility-audit.md` (498 tests, full WCAG 2.1 coverage, VPAT workflow, enterprise features)
 2. Screenshot storage strategy and retention policy
 3. PDF report template design
 4. API rate limiting and authentication
 5. Internationalization for non-Latin character sets
 6. JavaScript-rendered content (SPA support)
-7. Authentication for scanning password-protected pages
+7. ~~Authentication for scanning password-protected pages~~ ✅ **COMPLETED** - See `AuthenticatedScanService` (form, OAuth, API key, basic auth support)
 8. Competitive benchmarking data sources

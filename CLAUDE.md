@@ -6,6 +6,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 OnPageIQ is a Laravel 12 application that extracts content from URLs and performs spell/grammar checking using OpenAI 4o mini model via the Laravel AI SDK.
 
+### Before starting work
+- Always in plan mode to make a plan
+- After get the plan, make sure you Write the plan to in the local `.claude/tasks/TASK_NAME.md`.
+- The plan should be a detailed implementation plan and the reasoning behind them, as well as tasks broken down. 
+- The plan should require generating a unit test, when possible.
+- If the task require external knowledge or certain package, also research to get latest knowledge (Use Task tool for research)
+- Once you write the plan, firstly ask me to review it. Do not continue until I approve the plan.
+
+### While implementing
+- You should update the plan as you work.
+- After you complete tasks in the plan, you should update and append detailed descriptions of the changes you made, so following tasks can be easily hand over to other engineers.
+
+===
+
 ## Common Commands
 
 ```bash

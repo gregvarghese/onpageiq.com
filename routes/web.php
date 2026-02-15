@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\SocialiteController;
 use App\Http\Controllers\ExportController;
+use App\Livewire\Accessibility\AccessibilityAuditDashboard;
 use App\Livewire\Billing\BillingHistory;
 use App\Livewire\Billing\CreditPurchase;
 use App\Livewire\Billing\SubscriptionManager;
@@ -77,6 +78,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/create', ProjectCreate::class)->name('create');
         Route::get('/{project}', ProjectDashboard::class)->name('show');
         Route::get('/{project}/dictionary', ProjectDictionary::class)->name('dictionary');
+        Route::get('/{project}/accessibility', AccessibilityAuditDashboard::class)->name('accessibility');
         Route::get('/{project}/pages/{url}', PageDetailView::class)->name('pages.show');
         Route::get('/{project}/issues', ProjectDashboard::class)->name('issues');
         Route::get('/{project}/schedules', ProjectDashboard::class)->name('schedules');

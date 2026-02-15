@@ -23,7 +23,7 @@ class IssueAssignmentFactory extends Factory
             'assigned_by_user_id' => User::factory(),
             'assigned_to_user_id' => User::factory(),
             'due_date' => fake()->optional(0.7)->dateTimeBetween('now', '+2 weeks'),
-            'status' => fake()->randomElement(['open', 'in_progress', 'resolved', 'dismissed']),
+            'status' => 'open',
             'resolution_note' => null,
             'resolved_at' => null,
         ];
