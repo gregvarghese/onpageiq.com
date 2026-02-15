@@ -21,6 +21,7 @@ use App\Livewire\Scans\ScanResults;
 use App\Livewire\Settings\ApiTokens;
 use App\Livewire\Settings\OrganizationDictionary;
 use App\Livewire\Settings\SettingsIndex;
+use App\Livewire\SiteArchitecture\SiteArchitecturePage;
 use App\Livewire\Team\TeamDepartments;
 use App\Livewire\Team\TeamMembers;
 use App\Livewire\Webhooks\WebhookDeliveries;
@@ -77,6 +78,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/create', ProjectCreate::class)->name('create');
         Route::get('/{project}', ProjectDashboard::class)->name('show');
         Route::get('/{project}/dictionary', ProjectDictionary::class)->name('dictionary');
+        Route::get('/{project}/architecture', SiteArchitecturePage::class)->name('architecture');
         Route::get('/{project}/pages/{url}', PageDetailView::class)->name('pages.show');
         Route::get('/{project}/issues', ProjectDashboard::class)->name('issues');
         Route::get('/{project}/schedules', ProjectDashboard::class)->name('schedules');

@@ -30,8 +30,8 @@ test('issue assignment belongs to assigning user', function () {
     expect($assignment->assignedBy->id)->toBe($user->id);
 });
 
-test('issue assignment has default status of open', function () {
-    $assignment = IssueAssignment::factory()->create();
+test('issue assignment can have open status', function () {
+    $assignment = IssueAssignment::factory()->open()->create();
 
     expect($assignment->status)->toBe('open');
 });

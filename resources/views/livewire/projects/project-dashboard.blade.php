@@ -1,20 +1,11 @@
 <div>
+    {{-- Project Navigation --}}
+    <x-projects.navigation :project="$project" current="dashboard" />
+
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div>
-                <!-- Breadcrumb -->
-                <nav class="flex" aria-label="Breadcrumb">
-                    <ol role="list" class="flex items-center space-x-2">
-                        <li>
-                            <a href="{{ route('projects.index') }}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">Projects</a>
-                        </li>
-                        <li class="flex items-center">
-                            <x-ui.icon name="chevron-down" class="size-4 text-gray-400 -rotate-90" />
-                            <span class="ml-2 text-sm font-medium text-gray-900 dark:text-white">{{ $project->name }}</span>
-                        </li>
-                    </ol>
-                </nav>
-                <h1 class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{{ $project->name }}</h1>
+                <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ $project->name }}</h1>
                 @if($project->description)
                     <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $project->description }}</p>
                 @endif
@@ -593,6 +584,13 @@
                             Links
                             <span class="text-xs {{ $findingsFilter === 'links' ? 'text-orange-200' : 'text-gray-500 dark:text-gray-400' }}">{{ $counts['links'] }}</span>
                         </button>
+                        <button
+                            wire:click="setFindingsFilter('architecture')"
+                            class="inline-flex items-center gap-x-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors {{ $findingsFilter === 'architecture' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}"
+                        >
+                            Architecture
+                            <span class="text-xs {{ $findingsFilter === 'architecture' ? 'text-indigo-200' : 'text-gray-500 dark:text-gray-400' }}">{{ $counts['architecture'] }}</span>
+                        </button>
                     </div>
 
                     <!-- Page Filter Dropdown -->
@@ -738,15 +736,29 @@
                                 @foreach($findings->take(50) as $issue)
                                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 {{ in_array($issue->id, $selectedIssues) ? 'bg-primary-50 dark:bg-primary-900/10' : '' }}">
                                         <td class="relative w-12 px-4 py-3">
-                                            <input
-                                                type="checkbox"
-                                                wire:click="toggleIssueSelection({{ $issue->id }})"
-                                                @checked(in_array($issue->id, $selectedIssues))
-                                                class="size-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-600"
-                                            />
+                                            @if(!($issue->is_architecture_issue ?? false))
+                                                <input
+                                                    type="checkbox"
+                                                    wire:click="toggleIssueSelection({{ $issue->id }})"
+                                                    @checked(in_array($issue->id, $selectedIssues))
+                                                    class="size-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-600"
+                                                />
+                                            @else
+                                                <span class="text-gray-300 dark:text-gray-600">
+                                                    <x-ui.icon name="link" class="size-4" title="Architecture issue" />
+                                                </span>
+                                            @endif
                                         </td>
                                         <td class="px-3 py-3">
-                                            @if($issue->result?->scan?->url)
+                                            @if($issue->is_architecture_issue ?? false)
+                                                @if($issue->node)
+                                                    <a href="{{ route('projects.architecture', $project) }}?node={{ $issue->node->id }}" class="text-sm text-primary-600 dark:text-primary-400 hover:underline truncate block max-w-xs">
+                                                        {{ parse_url($issue->node->url, PHP_URL_PATH) ?: '/' }}
+                                                    </a>
+                                                @else
+                                                    <span class="text-sm text-gray-500 dark:text-gray-400">Site-wide</span>
+                                                @endif
+                                            @elseif($issue->result?->scan?->url)
                                                 <a href="{{ route('projects.pages.show', ['project' => $project, 'url' => $issue->result->scan->url]) }}" class="text-sm text-primary-600 dark:text-primary-400 hover:underline truncate block max-w-xs">
                                                     {{ parse_url($issue->result->scan->url->url, PHP_URL_PATH) ?: '/' }}
                                                 </a>
@@ -763,11 +775,17 @@
                                                     'accessibility' => 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
                                                     'readability' => 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
                                                     'links' => 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+                                                    'architecture' => 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
                                                 ];
                                                 $colorClass = $typeColors[$issue->category] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
+                                                $isArchitectureIssue = $issue->is_architecture_issue ?? false;
                                             @endphp
                                             <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize {{ $colorClass }}">
-                                                {{ $issue->category }}
+                                                @if($isArchitectureIssue)
+                                                    {{ $issue->issue_type->label() }}
+                                                @else
+                                                    {{ $issue->category }}
+                                                @endif
                                             </span>
                                         </td>
                                         <td class="px-3 py-3">
@@ -810,40 +828,69 @@
                                                     class="absolute right-0 z-10 mt-1 w-48 origin-top-right rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-gray-200 dark:ring-gray-700"
                                                 >
                                                     <div class="py-1">
-                                                        <button
-                                                            wire:click="markIssueAsFixed({{ $issue->id }})"
-                                                            @click="open = false"
-                                                            class="flex w-full items-center gap-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                                        >
-                                                            <x-ui.icon name="check" class="size-4" />
-                                                            Mark as Fixed
-                                                        </button>
-                                                        <button
-                                                            wire:click="ignoreIssue({{ $issue->id }})"
-                                                            @click="open = false"
-                                                            class="flex w-full items-center gap-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                                        >
-                                                            <x-ui.icon name="eye-slash" class="size-4" />
-                                                            Ignore Issue
-                                                        </button>
-                                                        @if(in_array($issue->category, ['spelling', 'grammar']))
-                                                            <button
-                                                                wire:click="addIssueToDictionary({{ $issue->id }})"
+                                                        @if($issue->is_architecture_issue ?? false)
+                                                            {{-- Architecture issue actions --}}
+                                                            <a
+                                                                href="{{ route('projects.architecture', ['project' => $project, 'node' => $issue->node?->id]) }}"
                                                                 @click="open = false"
                                                                 class="flex w-full items-center gap-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                                                             >
-                                                                <x-ui.icon name="book-open" class="size-4" />
-                                                                Add to Dictionary
+                                                                <x-ui.icon name="map" class="size-4" />
+                                                                View in Graph
+                                                            </a>
+                                                            <button
+                                                                wire:click="resolveArchitectureIssue('{{ $issue->architecture_issue_id }}')"
+                                                                @click="open = false"
+                                                                class="flex w-full items-center gap-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                            >
+                                                                <x-ui.icon name="check" class="size-4" />
+                                                                Resolve Issue
+                                                            </button>
+                                                            <button
+                                                                wire:click="ignoreArchitectureIssue('{{ $issue->architecture_issue_id }}')"
+                                                                @click="open = false"
+                                                                class="flex w-full items-center gap-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                            >
+                                                                <x-ui.icon name="eye-slash" class="size-4" />
+                                                                Dismiss Issue
+                                                            </button>
+                                                        @else
+                                                            {{-- Regular content issue actions --}}
+                                                            <button
+                                                                wire:click="markIssueAsFixed({{ $issue->id }})"
+                                                                @click="open = false"
+                                                                class="flex w-full items-center gap-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                            >
+                                                                <x-ui.icon name="check" class="size-4" />
+                                                                Mark as Fixed
+                                                            </button>
+                                                            <button
+                                                                wire:click="ignoreIssue({{ $issue->id }})"
+                                                                @click="open = false"
+                                                                class="flex w-full items-center gap-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                            >
+                                                                <x-ui.icon name="eye-slash" class="size-4" />
+                                                                Ignore Issue
+                                                            </button>
+                                                            @if(in_array($issue->category, ['spelling', 'grammar']))
+                                                                <button
+                                                                    wire:click="addIssueToDictionary({{ $issue->id }})"
+                                                                    @click="open = false"
+                                                                    class="flex w-full items-center gap-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                                >
+                                                                    <x-ui.icon name="book-open" class="size-4" />
+                                                                    Add to Dictionary
+                                                                </button>
+                                                            @endif
+                                                            <button
+                                                                x-data
+                                                                @click="$dispatch('open-false-positive-modal', { issueId: {{ $issue->id }} }); open = false"
+                                                                class="flex w-full items-center gap-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                            >
+                                                                <x-ui.icon name="flag" class="size-4" />
+                                                                Report False Positive
                                                             </button>
                                                         @endif
-                                                        <button
-                                                            x-data
-                                                            @click="$dispatch('open-false-positive-modal', { issueId: {{ $issue->id }} }); open = false"
-                                                            class="flex w-full items-center gap-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                                        >
-                                                            <x-ui.icon name="flag" class="size-4" />
-                                                            Report False Positive
-                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>

@@ -21,13 +21,39 @@ class Project extends Model
         'description',
         'language',
         'check_config',
+        'architecture_config',
     ];
 
     protected function casts(): array
     {
         return [
             'check_config' => 'array',
+            'architecture_config' => 'array',
         ];
+    }
+
+    /**
+     * Get the architecture crawl configuration with defaults.
+     *
+     * @return array<string, mixed>
+     */
+    public function getArchitectureConfigWithDefaults(): array
+    {
+        $defaults = [
+            'max_pages' => 500,
+            'max_depth' => 10,
+            'deep_page_threshold' => 4,
+            'respect_robots_txt' => true,
+            'javascript_rendering' => false,
+            'auto_detect_spa' => true,
+            'use_existing_scans' => true,
+            'scan_data_max_age_hours' => 24,
+            'include_patterns' => [],
+            'exclude_patterns' => [],
+            'request_timeout' => 30,
+        ];
+
+        return array_merge($defaults, $this->architecture_config ?? []);
     }
 
     /**
@@ -133,6 +159,22 @@ class Project extends Model
     public function discoveredUrls(): HasMany
     {
         return $this->hasMany(DiscoveredUrl::class);
+    }
+
+    /**
+     * Get the site architectures for this project.
+     */
+    public function siteArchitectures(): HasMany
+    {
+        return $this->hasMany(SiteArchitecture::class);
+    }
+
+    /**
+     * Get the latest site architecture for this project.
+     */
+    public function latestSiteArchitecture(): HasOne
+    {
+        return $this->hasOne(SiteArchitecture::class)->latestOfMany();
     }
 
     /**

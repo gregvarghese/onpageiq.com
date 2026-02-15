@@ -21,6 +21,8 @@
         "sentry/sentry-laravel": "^4.20",
         "socialiteproviders/microsoft": "^4.6",
         "spatie/browsershot": "^5.2",
+        "symfony/css-selector": "^8.0",
+        "symfony/dom-crawler": "^8.0",
         "tigitz/php-spellchecker": "^0.8.0"
     },
     "require-dev": {

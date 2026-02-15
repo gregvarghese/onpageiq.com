@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Pages;
 
+use App\Models\ArchitectureNode;
 use App\Models\Url;
 use Illuminate\View\View;
 use Livewire\Attributes\Computed;
@@ -138,6 +139,23 @@ class PageDetailView extends Component
     public function schemaValidations(): \Illuminate\Database\Eloquent\Collection
     {
         return $this->url->schemaValidations()->latest()->get();
+    }
+
+    /**
+     * Get the architecture node for this URL (if it exists in the latest architecture).
+     */
+    #[Computed]
+    public function architectureNode(): ?ArchitectureNode
+    {
+        $architecture = $this->url->project->latestSiteArchitecture;
+
+        if (! $architecture) {
+            return null;
+        }
+
+        return $architecture->nodes()
+            ->where('url', $this->url->url)
+            ->first();
     }
 
     private function getLcpStatus(?float $value): string

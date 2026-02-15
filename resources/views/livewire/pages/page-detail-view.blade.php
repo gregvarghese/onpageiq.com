@@ -20,6 +20,13 @@
                 <h1 class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white truncate">{{ $url->url }}</h1>
             </div>
             <div class="flex items-center gap-x-3">
+                @php $architectureNode = $this->architectureNode; @endphp
+                @if($architectureNode)
+                    <a href="{{ route('projects.architecture', ['project' => $url->project, 'node' => $architectureNode->id]) }}" class="inline-flex items-center gap-x-2 rounded-md bg-indigo-50 dark:bg-indigo-900/30 px-3.5 py-2.5 text-sm font-semibold text-indigo-700 dark:text-indigo-300 shadow-sm ring-1 ring-inset ring-indigo-200 dark:ring-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50">
+                        <x-ui.icon name="share" class="size-5" />
+                        View in Architecture
+                    </a>
+                @endif
                 <a href="{{ $url->url }}" target="_blank" class="inline-flex items-center gap-x-2 rounded-md bg-white dark:bg-gray-800 px-3.5 py-2.5 text-sm font-semibold text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                     <x-ui.icon name="arrow-top-right-on-square" class="size-5" />
                     Visit Page

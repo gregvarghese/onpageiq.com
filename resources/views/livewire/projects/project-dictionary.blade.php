@@ -1,12 +1,8 @@
 <div>
-    <div class="mb-8">
-        <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
-            <a href="{{ route('projects.index') }}" class="hover:text-gray-700 dark:hover:text-gray-200">Projects</a>
-            <span>/</span>
-            <a href="{{ route('projects.show', $project) }}" class="hover:text-gray-700 dark:hover:text-gray-200">{{ $project->name }}</a>
-            <span>/</span>
-            <span class="text-gray-900 dark:text-white">Dictionary</span>
-        </div>
+    {{-- Project Navigation --}}
+    <x-projects.navigation :project="$project" current="dictionary" />
+
+    <div class="mb-8 mt-6">
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Project Dictionary</h2>

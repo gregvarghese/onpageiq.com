@@ -3,6 +3,7 @@
 namespace App\Livewire\Projects;
 
 use App\Jobs\ScanUrlJob;
+use App\Models\ArchitectureIssue;
 use App\Models\DismissedIssue;
 use App\Models\Issue;
 use App\Models\IssueAssignment;
@@ -411,6 +412,52 @@ class ProjectDashboard extends Component
     }
 
     /**
+     * Resolve an architecture issue.
+     */
+    public function resolveArchitectureIssue(string $issueId): void
+    {
+        $this->authorize('update', $this->project);
+
+        $issue = ArchitectureIssue::findOrFail($issueId);
+
+        // Verify the issue belongs to this project's architecture
+        $architecture = $this->project->fresh()->latestSiteArchitecture;
+        if (! $architecture || $issue->site_architecture_id !== $architecture->id) {
+            session()->flash('error', 'Architecture issue not found.');
+
+            return;
+        }
+
+        $issue->update(['is_resolved' => true]);
+
+        $this->dispatch('issues-updated');
+        session()->flash('message', 'Architecture issue resolved.');
+    }
+
+    /**
+     * Ignore/dismiss an architecture issue (same as resolve for now).
+     */
+    public function ignoreArchitectureIssue(string $issueId): void
+    {
+        $this->authorize('update', $this->project);
+
+        $issue = ArchitectureIssue::findOrFail($issueId);
+
+        // Verify the issue belongs to this project's architecture
+        $architecture = $this->project->fresh()->latestSiteArchitecture;
+        if (! $architecture || $issue->site_architecture_id !== $architecture->id) {
+            session()->flash('error', 'Architecture issue not found.');
+
+            return;
+        }
+
+        $issue->update(['is_resolved' => true]);
+
+        $this->dispatch('issues-updated');
+        session()->flash('message', 'Architecture issue dismissed.');
+    }
+
+    /**
      * Add a new URL to the project.
      */
     public function addUrl(): void
@@ -620,6 +667,7 @@ class ProjectDashboard extends Component
             $urlIds = collect($this->pageFilter);
         }
 
+        // Get regular content issues
         $issues = \App\Models\Issue::query()
             ->whereHas('result.scan', function ($query) use ($urlIds) {
                 $query->whereIn('url_id', $urlIds);
@@ -628,6 +676,12 @@ class ProjectDashboard extends Component
             ->latest()
             ->get();
 
+        // Get architecture issues if not filtering to non-architecture categories
+        $architectureIssues = collect();
+        if ($this->findingsFilter === 'all' || $this->findingsFilter === 'architecture') {
+            $architectureIssues = $this->getArchitectureIssues();
+        }
+
         // Filter by category if not 'all'
         if ($this->findingsFilter !== 'all') {
             $categoryMap = [
@@ -635,14 +689,57 @@ class ProjectDashboard extends Component
                 'accessibility' => ['accessibility'],
                 'meta' => ['seo', 'meta'],
                 'links' => ['links', 'broken-link'],
-                'seo' => ['seo'],
+                'architecture' => ['architecture'],
             ];
 
             $categories = $categoryMap[$this->findingsFilter] ?? [$this->findingsFilter];
+
+            if ($this->findingsFilter === 'architecture') {
+                // Return only architecture issues
+                return $architectureIssues;
+            }
+
             $issues = $issues->filter(fn ($issue) => in_array($issue->category, $categories));
         }
 
-        return $issues;
+        // Merge architecture issues with regular issues (use concat to avoid Eloquent's getKey requirement)
+        return collect($issues)->concat($architectureIssues)->sortByDesc('created_at')->values();
+    }
+
+    /**
+     * Get architecture issues for this project as a normalized collection.
+     */
+    protected function getArchitectureIssues(): \Illuminate\Support\Collection
+    {
+        $architecture = $this->project->latestSiteArchitecture;
+
+        if (! $architecture) {
+            return collect();
+        }
+
+        return $architecture->issues()
+            ->unresolved()
+            ->with('node')
+            ->latest()
+            ->get()
+            ->map(function (ArchitectureIssue $issue) {
+                // Create a synthetic object that matches Issue structure for display
+                return (object) [
+                    'id' => 'arch_'.$issue->id,
+                    'architecture_issue_id' => $issue->id,
+                    'category' => 'architecture',
+                    'subcategory' => $issue->issue_type->category(),
+                    'message' => $issue->message,
+                    'suggestion' => $issue->recommendation,
+                    'context' => $issue->node?->url,
+                    'severity' => $issue->severity->value,
+                    'created_at' => $issue->created_at,
+                    'is_architecture_issue' => true,
+                    'issue_type' => $issue->issue_type,
+                    'node' => $issue->node,
+                    'result' => null,
+                ];
+            });
     }
 
     /**
@@ -661,13 +758,19 @@ class ProjectDashboard extends Component
             })
             ->get();
 
+        // Get architecture issues count
+        $architectureCount = 0;
+        if ($architecture = $this->project->latestSiteArchitecture) {
+            $architectureCount = $architecture->issues()->unresolved()->count();
+        }
+
         return [
-            'all' => $issues->count(),
+            'all' => $issues->count() + $architectureCount,
             'content' => $issues->whereIn('category', ['spelling', 'grammar', 'readability'])->count(),
             'accessibility' => $issues->where('category', 'accessibility')->count(),
             'meta' => $issues->whereIn('category', ['seo', 'meta'])->count(),
             'links' => $issues->whereIn('category', ['links', 'broken-link'])->count(),
-            'seo' => $issues->where('category', 'seo')->count(),
+            'architecture' => $architectureCount,
         ];
     }
 
